@@ -7,9 +7,23 @@ import LeadForm from '@/components/LeadForm';
 import Dashboard from '@/components/Dashboard';
 import Link from 'next/link';
 
+// ============================================
+// TYPE DEFINITIONS
+// ============================================
+
+interface Lead {
+  _id: string;
+  name: string;
+  email: string;
+  status: 'new' | 'contacted' | 'interested' | 'closed' | 'lost';
+  dealValue: number;
+  nextFollowUp?: string;
+  notes?: string;
+}
+
 export default function Home() {
-  const [leads, setLeads] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const { isAuthenticated, token, user, logout, loading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -26,7 +40,7 @@ export default function Home() {
     fetchLeads();
   }, [isAuthenticated, token, authLoading]);
 
-  const fetchLeads = async () => {
+  const fetchLeads = async (): Promise<void> => {
     if (!token) return;
     
     try {
@@ -37,7 +51,7 @@ export default function Home() {
       });
       
       if (response.ok) {
-        const data = await response.json();
+        const data: Lead[] = await response.json();
         setLeads(data);
       } else if (response.status === 401) {
         logout();
@@ -51,17 +65,21 @@ export default function Home() {
     }
   };
 
-  const handleLeadAdded = (newLead) => {
+  // ============================================
+  // TYPED HANDLER FUNCTIONS
+  // ============================================
+
+  const handleLeadAdded = (newLead: Lead): void => {
     setLeads([...leads, newLead]);
   };
 
-  const handleLeadDeleted = (id) => {
-    setLeads(leads.filter((lead) => lead._id !== id));
+  const handleLeadDeleted = (id: string): void => {
+    setLeads(leads.filter((lead: Lead) => lead._id !== id));
   };
 
-  const handleLeadUpdated = (updatedLead) => {
+  const handleLeadUpdated = (updatedLead: Lead): void => {
     setLeads(
-      leads.map((lead) =>
+      leads.map((lead: Lead) =>
         lead._id === updatedLead._id ? updatedLead : lead
       )
     );
@@ -88,11 +106,11 @@ export default function Home() {
     return null;
   }
 
-  // Calculate stats
-  const totalLeads = leads.length;
-  const totalValue = leads.reduce((sum, lead) => sum + lead.dealValue, 0);
-  const activeLeads = leads.filter(l => l.status !== 'closed' && l.status !== 'lost').length;
-  const closedLeads = leads.filter(l => l.status === 'closed').length;
+  // Calculate stats with proper typing
+  const totalLeads: number = leads.length;
+  const totalValue: number = leads.reduce((sum: number, lead: Lead) => sum + lead.dealValue, 0);
+  const activeLeads: number = leads.filter((l: Lead) => l.status !== 'closed' && l.status !== 'lost').length;
+  const closedLeads: number = leads.filter((l: Lead) => l.status === 'closed').length;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 relative overflow-hidden">
@@ -108,7 +126,7 @@ export default function Home() {
             <div>
               <div className="flex items-center gap-3 mb-3">
                 <div className="relative">
-                  <span className="text-5xl animate-float"></span>
+                  <span className="text-5xl animate-float">🚀</span>
                   <div className="absolute -inset-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur-lg opacity-20"></div>
                 </div>
                 <h1 className="text-6xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
@@ -175,7 +193,7 @@ export default function Home() {
             <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-8 rounded-3xl shadow-xl text-white transform hover:scale-105 transition-all hover:shadow-2xl cursor-pointer">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-purple-100 text-base font-bold">Closed Deals</span>
-                <span className="text-5xl">✓</span>
+                <span className="text-5xl">✅</span>
               </div>
               <p className="text-5xl font-black mb-2">{closedLeads}</p>
               <div className="h-1 w-16 bg-purple-300 rounded-full"></div>
