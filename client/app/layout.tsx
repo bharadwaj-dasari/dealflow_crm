@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata = {
   title: "DealFlow CRM",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/favicon.png",
     description: 'Manage your leads and follow-ups',
   },
 };
