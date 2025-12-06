@@ -41,7 +41,7 @@ export default function ProfilePage() {
     setMessage({ type: '', text: '' });
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/update-profile', {
+      const response = await fetch('https://dealflow-crm.onrender.com/api/auth/update-profile', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -85,7 +85,7 @@ export default function ProfilePage() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/change-password', {
+      const response = await fetch('https://dealflow-crm.onrender.com/api/auth/change-password', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -120,7 +120,7 @@ export default function ProfilePage() {
     setMessage({ type: '', text: '' });
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/delete-account', {
+      const response = await fetch('https://dealflow-crm.onrender.com/api/auth/delete-account', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

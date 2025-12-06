@@ -21,7 +21,7 @@ export default function LeadForm({ onLeadAdded, token }) {
     setSuccess(false);
 
     try {
-      const response = await fetch('http://localhost:5000/api/leads', {
+      const response = await fetch('https://dealflow-crm.onrender.com/api/leads', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -136,7 +136,7 @@ export default function LeadForm({ onLeadAdded, token }) {
               value={formData.dealValue}
               onChange={(e) => setFormData({ ...formData, dealValue: e.target.value })}
               className="w-full border-2 border-gray-300 rounded-xl px-5 py-4 text-base text-gray-900 font-semibold focus:outline-none focus:ring-4 focus:ring-green-200 focus:border-green-500 transition-all placeholder:text-gray-500 hover:border-gray-400"
-              placeholder="50000"
+              placeholder=" 0"
             />
             <p className="text-sm text-gray-600 mt-2 font-semibold">
               💡 Estimated deal value in Rupees

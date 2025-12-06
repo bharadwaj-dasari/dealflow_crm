@@ -36,7 +36,7 @@ export default function Dashboard({ leads, onLeadDeleted, onLeadUpdated, token }
     if (!confirm('⚠️ Are you sure you want to delete this lead? This action cannot be undone.')) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/leads/${id}`, {
+      const response = await fetch(`https://dealflow-crm.onrender.com/api/leads/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -59,7 +59,7 @@ export default function Dashboard({ leads, onLeadDeleted, onLeadUpdated, token }
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/leads/${id}`, {
+      const response = await fetch(`https://dealflow-crm.onrender.com/api/leads/${id}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',

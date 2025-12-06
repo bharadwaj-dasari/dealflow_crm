@@ -16,7 +16,7 @@ const handler = NextAuth({
       },
       async authorize(credentials) {
         try {
-          const res = await fetch('http://localhost:5000/api/auth/login', {
+          const res = await fetch('https://dealflow-crm.onrender.com/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -41,7 +41,7 @@ const handler = NextAuth({
     async signIn({ user, account, profile }) {
       if (account.provider === 'google') {
         try {
-          const res = await fetch('http://localhost:5000/api/auth/google-login', {
+          const res = await fetch('https://dealflow-crm.onrender.com/api/auth/google-login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
