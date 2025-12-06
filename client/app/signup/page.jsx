@@ -6,6 +6,61 @@ import { useAuth } from '@/context/AuthContext';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 
+// ============================================
+// VALIDATION UTILITIES
+// ============================================
+
+interface PasswordStrength {
+  score: number;
+  message: string;
+  color: string;
+}
+
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+  return emailRegex.test(email);
+};
+
+const checkPasswordStrength = (password: string): PasswordStrength => {
+  let score = 0;
+  
+  if (password.length >= 8) score++;
+  if (password.length >= 12) score++;
+  if (/[a-z]/.test(password)) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+  
+  if (score <= 2) return { score, message: 'Weak', color: 'red' };
+  if (score <= 4) return { score, message: 'Medium', color: 'yellow' };
+  return { score, message: 'Strong', color: 'green' };
+};
+
+const validatePassword = (password: string): { valid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  
+  if (password.length < 8) {
+    errors.push('Password must be at least 8 characters long');
+  }
+  if (!/[a-z]/.test(password)) {
+    errors.push('Must contain at least one lowercase letter');
+  }
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Must contain at least one uppercase letter');
+  }
+  if (!/[0-9]/.test(password)) {
+    errors.push('Must contain at least one number');
+  }
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    errors.push('Must contain at least one special character (@#$%*!&)');
+  }
+  if (password.length > 128) {
+    errors.push('Password must not exceed 128 characters');
+  }
+  
+  return { valid: errors.length === 0, errors };
+};
+
 export default function SignupPage() {
   const [formData, setFormData] = useState({
     name: '',
@@ -13,14 +68,90 @@ export default function SignupPage() {
     password: '',
   });
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>({ 
+    score: 0, 
+    message: '', 
+    color: 'gray' 
+  });
+  
   const { login } = useAuth();
   const router = useRouter();
 
-  const handleSubmit = async (e) => {
+  // Real-time validation
+  const handleNameChange = (name: string) => {
+    setFormData({ ...formData, name });
+    
+    if (name.length > 0 && name.length < 2) {
+      setFieldErrors({ ...fieldErrors, name: 'Name must be at least 2 characters' });
+    } else if (name.length > 50) {
+      setFieldErrors({ ...fieldErrors, name: 'Name must not exceed 50 characters' });
+    } else {
+      const { name: _, ...rest } = fieldErrors;
+      setFieldErrors(rest);
+    }
+  };
+
+  const handleEmailChange = (email: string) => {
+    setFormData({ ...formData, email });
+    
+    if (email.length > 0 && !validateEmail(email)) {
+      setFieldErrors({ ...fieldErrors, email: 'Please enter a valid email address' });
+    } else {
+      const { email: _, ...rest } = fieldErrors;
+      setFieldErrors(rest);
+    }
+  };
+
+  const handlePasswordChange = (password: string) => {
+    setFormData({ ...formData, password });
+    
+    // Update password strength
+    if (password.length > 0) {
+      setPasswordStrength(checkPasswordStrength(password));
+    } else {
+      setPasswordStrength({ score: 0, message: '', color: 'gray' });
+    }
+    
+    // Validate password
+    const validation = validatePassword(password);
+    if (!validation.valid && password.length > 0) {
+      setFieldErrors({ ...fieldErrors, password: validation.errors[0] });
+    } else {
+      const { password: _, ...rest } = fieldErrors;
+      setFieldErrors(rest);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    // Final validation before submission
+    const errors: {[key: string]: string} = {};
+    
+    if (formData.name.length < 2) {
+      errors.name = 'Name must be at least 2 characters';
+    }
+    
+    if (!validateEmail(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.valid) {
+      errors.password = passwordValidation.errors.join(', ');
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError('Please fix the validation errors below');
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -62,6 +193,13 @@ export default function SignupPage() {
     }
   };
 
+  const getStrengthBarColor = () => {
+    if (passwordStrength.color === 'red') return 'bg-red-500';
+    if (passwordStrength.color === 'yellow') return 'bg-yellow-500';
+    if (passwordStrength.color === 'green') return 'bg-green-500';
+    return 'bg-gray-300';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 relative overflow-hidden">
       {/* Animated Background Blobs */}
@@ -75,7 +213,7 @@ export default function SignupPage() {
           <div className="flex justify-between items-center h-20">
             <Link href="/" className="flex items-center gap-3">
               <div className="relative">
-                <span className="text-4xl animate-float"></span>
+                <span className="text-4xl animate-float">🚀</span>
                 <div className="absolute -inset-2 bg-gradient-to-r from-green-600 to-blue-600 rounded-full blur-lg opacity-20"></div>
               </div>
               <span className="text-3xl font-extrabold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
@@ -157,60 +295,139 @@ export default function SignupPage() {
 
             {/* Signup Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Name Field */}
               <div>
                 <label className="block text-base font-bold mb-2 text-gray-900">
-                  Full Name
+                  Full Name *
                 </label>
                 <input
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full border-2 border-gray-300 rounded-xl px-5 py-4 text-base text-gray-900 font-semibold focus:outline-none focus:ring-4 focus:ring-green-200 focus:border-green-500 transition-all placeholder:text-gray-500"
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  className={`w-full border-2 rounded-xl px-5 py-4 text-base text-gray-900 font-semibold focus:outline-none focus:ring-4 transition-all placeholder:text-gray-500 ${
+                    fieldErrors.name 
+                      ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
+                      : 'border-gray-300 focus:ring-green-200 focus:border-green-500'
+                  }`}
                   placeholder="John Doe"
                   disabled={googleLoading}
                 />
+                {fieldErrors.name && (
+                  <p className="text-red-600 text-sm font-bold mt-2 flex items-center gap-1">
+                    ⚠️ {fieldErrors.name}
+                  </p>
+                )}
               </div>
 
+              {/* Email Field */}
               <div>
                 <label className="block text-base font-bold mb-2 text-gray-900">
-                  Email Address
+                  Email Address *
                 </label>
                 <input
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full border-2 border-gray-300 rounded-xl px-5 py-4 text-base text-gray-900 font-semibold focus:outline-none focus:ring-4 focus:ring-green-200 focus:border-green-500 transition-all placeholder:text-gray-500"
+                  onChange={(e) => handleEmailChange(e.target.value)}
+                  className={`w-full border-2 rounded-xl px-5 py-4 text-base text-gray-900 font-semibold focus:outline-none focus:ring-4 transition-all placeholder:text-gray-500 ${
+                    fieldErrors.email 
+                      ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
+                      : 'border-gray-300 focus:ring-green-200 focus:border-green-500'
+                  }`}
                   placeholder="you@example.com"
                   disabled={googleLoading}
                 />
+                {fieldErrors.email && (
+                  <p className="text-red-600 text-sm font-bold mt-2 flex items-center gap-1">
+                    ⚠️ {fieldErrors.email}
+                  </p>
+                )}
               </div>
 
+              {/* Password Field */}
               <div>
                 <label className="block text-base font-bold mb-2 text-gray-900">
-                  Password
+                  Password *
                 </label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
-                  className="w-full border-2 border-gray-300 rounded-xl px-5 py-4 text-base text-gray-900 font-semibold focus:outline-none focus:ring-4 focus:ring-green-200 focus:border-green-500 transition-all placeholder:text-gray-500"
-                  placeholder="Create a strong password"
-                  disabled={googleLoading}
-                />
-                <p className="text-sm text-gray-600 mt-2 font-semibold">
-                  ✓ Minimum 6 characters
-                </p>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    minLength={8}
+                    value={formData.password}
+                    onChange={(e) => handlePasswordChange(e.target.value)}
+                    className={`w-full border-2 rounded-xl px-5 py-4 pr-12 text-base text-gray-900 font-semibold focus:outline-none focus:ring-4 transition-all placeholder:text-gray-500 ${
+                      fieldErrors.password 
+                        ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
+                        : 'border-gray-300 focus:ring-green-200 focus:border-green-500'
+                    }`}
+                    placeholder="Create a strong password"
+                    disabled={googleLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 font-bold"
+                  >
+                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                  </button>
+                </div>
+                
+                {/* Password Strength Indicator */}
+                {formData.password.length > 0 && (
+                  <div className="mt-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-bold text-gray-700">Password Strength:</span>
+                      <span className={`text-sm font-black ${
+                        passwordStrength.color === 'red' ? 'text-red-600' :
+                        passwordStrength.color === 'yellow' ? 'text-yellow-600' :
+                        passwordStrength.color === 'green' ? 'text-green-600' : 'text-gray-600'
+                      }`}>
+                        {passwordStrength.message}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all ${getStrengthBarColor()}`}
+                        style={{ width: `${(passwordStrength.score / 6) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+                
+                {fieldErrors.password && (
+                  <p className="text-red-600 text-sm font-bold mt-2 flex items-start gap-1">
+                    ⚠️ {fieldErrors.password}
+                  </p>
+                )}
+                
+                {/* Password Requirements */}
+                <div className="mt-3 space-y-1">
+                  <p className="text-xs font-bold text-gray-700 mb-1">Password must contain:</p>
+                  <div className="grid grid-cols-2 gap-1 text-xs">
+                    <p className={`font-semibold ${formData.password.length >= 8 ? 'text-green-600' : 'text-gray-500'}`}>
+                      ✓ 8+ characters
+                    </p>
+                    <p className={`font-semibold ${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}`}>
+                      ✓ Lowercase letter
+                    </p>
+                    <p className={`font-semibold ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}`}>
+                      ✓ Uppercase letter
+                    </p>
+                    <p className={`font-semibold ${/[0-9]/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}`}>
+                      ✓ Number
+                    </p>
+                    <p className={`font-semibold ${/[^A-Za-z0-9]/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}`}>
+                      ✓ Special character
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <button
                 type="submit"
-                disabled={loading || googleLoading}
+                disabled={loading || googleLoading || Object.keys(fieldErrors).length > 0}
                 className="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-4 rounded-xl text-lg font-black hover:from-green-700 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-400 transition-all shadow-lg hover:shadow-2xl disabled:cursor-not-allowed transform hover:scale-105 hover:-translate-y-0.5 flex items-center justify-center gap-2"
               >
                 {loading ? (
@@ -243,8 +460,8 @@ export default function SignupPage() {
             <div className="mt-8 pt-6 border-t-2 border-gray-200">
               <div className="grid grid-cols-3 gap-3 text-center text-xs text-gray-600 font-semibold">
                 <div className="flex flex-col items-center gap-1">
-                  <span className="text-green-600 text-2xl">✓</span>
-                  <span>No Credit Card</span>
+                  <span className="text-green-600 text-2xl">🔒</span>
+                  <span>Secure Signup</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <span className="text-blue-600 text-2xl">⚡</span>

@@ -6,10 +6,15 @@ import Footer from '@/components/Footer';
 
 const inter = Inter({ subsets: ['latin'] });
 
+
 export const metadata = {
-  title: 'DealFlow CRM',
-  description: 'Manage your leads and follow-ups',
+  title: "DealFlow CRM",
+  icons: {
+    icon: "/favicon.ico",
+    description: 'Manage your leads and follow-ups',
+  },
 };
+
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
